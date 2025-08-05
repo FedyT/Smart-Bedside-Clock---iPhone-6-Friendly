@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bedside Clock</title>
+  
+  <!-- DynaPuff Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=DynaPuff:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #000;
+      color: #0f0;
+      font-family: 'DynaPuff', cursive;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    #clock {
+      font-size: 5em;
+      margin-bottom: 30px;
+    }
+
+    #weather {
+      font-size: 1.5em;
+      color: #0ff;
+    }
+
+    .label {
+      font-size: 0.9em;
+      color: #777;
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="clock">--:--</div>
+
+  <div id="weather">
+    <div class="label">Current Weather</div>
+    <div id="weatherText">Loading...</div>
+  </div>
+
+  <script>
+    // Tunis 24h Clock
+    function updateClock() {
+      const options = {
+        timeZone: 'Africa/Tunis',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      };
+      const now = new Date().toLocaleTimeString('fr-FR', options);
+      document.getElementById('clock').textContent = now;
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Weather from wttr.in (current only)
+    async function fetchWeather() {
+      try {
+        const response = await fetch("https://wttr.in/Tunis?format=%t+%C", {
+          headers: { 'Accept': 'text/plain' }
+        });
+        const text = await response.text();
+        document.getElementById('weatherText').textContent = `Tunis: ${text.trim()}`;
+      } catch (error) {
+        document.getElementById('weatherText').textContent = "Weather unavailable";
+      }
+    }
+
+    fetchWeather();
+    setInterval(fetchWeather, 10 * 60 * 1000); // Refresh every 10 min
+  </script>
+</body>
+</html>
