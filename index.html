@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bedside Clock</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bedside Clock with Manual Location</title>
   
-  <!-- DynaPuff Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=DynaPuff:wght@400;700&display=swap" rel="stylesheet">
-
+  <!-- Google Font: DynaPuff -->
+  <link href="https://fonts.googleapis.com/css2?family=DynaPuff&display=swap" rel="stylesheet" />
+  
   <style>
     body {
       background-color: #000;
@@ -15,71 +15,135 @@
       font-family: 'DynaPuff', cursive;
       display: flex;
       flex-direction: column;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       height: 100vh;
       margin: 0;
       padding: 20px;
       text-align: center;
     }
-
+    
     #clock {
       font-size: 5em;
       margin-bottom: 30px;
+      user-select: none;
     }
-
+    
     #weather {
       font-size: 1.5em;
       color: #0ff;
+      margin-bottom: 20px;
+      user-select: none;
     }
-
+    
     .label {
       font-size: 0.9em;
       color: #777;
       margin-bottom: 5px;
+      user-select: none;
+    }
+    
+    #locBtn {
+      background: #0f0;
+      color: #000;
+      border: none;
+      padding: 10px 25px;
+      font-size: 1em;
+      border-radius: 25px;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 0 8px #0f0aa0;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    #locBtn:hover {
+      background: #0cc;
+      color: #000;
+      box-shadow: 0 0 15px #0cc;
     }
   </style>
 </head>
 <body>
-  <div id="clock">--:--</div>
-
+  
+  <div id="clock">--:--:--</div>
+  
   <div id="weather">
     <div class="label">Current Weather</div>
     <div id="weatherText">Loading...</div>
   </div>
-
+  
+  <button id="locBtn" aria-label="Use my current location to update time and weather">
+    Use My Location 📍
+  </button>
+  
   <script>
-    // Tunis 24h Clock
+    // Default timezone & coords for Tunis
+    let timeZone = 'Africa/Tunis';
+    let lat = 36.8188;
+    let lon = 10.1658;
+    
+    const clockEl = document.getElementById('clock');
+    const weatherTextEl = document.getElementById('weatherText');
+    const locBtn = document.getElementById('locBtn');
+    
+    // Clock update function with dynamic timezone
     function updateClock() {
-      const options = {
-        timeZone: 'Africa/Tunis',
+      const now = new Date().toLocaleTimeString('fr-FR', {
+        timeZone,
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: false,
-      };
-      const now = new Date().toLocaleTimeString('fr-FR', options);
-      document.getElementById('clock').textContent = now;
+        hour12: false
+      });
+      clockEl.textContent = now;
     }
-
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    // Weather from wttr.in (current only)
-    async function fetchWeather() {
+    
+    // Weather fetch function by lat, lon
+    async function fetchWeather(lat, lon) {
       try {
-        const response = await fetch("https://wttr.in/Tunis?format=%t+%C", {
-          headers: { 'Accept': 'text/plain' }
-        });
-        const text = await response.text();
-        document.getElementById('weatherText').textContent = `Tunis: ${text.trim()}`;
-      } catch (error) {
-        document.getElementById('weatherText').textContent = "Weather unavailable";
+        const url = `https://wttr.in/${lat},${lon}?format=%t+%C`;
+        const res = await fetch(url, { headers: { 'Accept': 'text/plain' } });
+        const text = await res.text();
+        weatherTextEl.textContent = `Current: ${text.trim()}`;
+      } catch {
+        weatherTextEl.textContent = 'Weather unavailable';
       }
     }
-
-    fetchWeather();
-    setInterval(fetchWeather, 10 * 60 * 1000); // Refresh every 10 min
+    
+    // Initialize default
+    updateClock();
+    setInterval(updateClock, 1000);
+    fetchWeather(lat, lon);
+    setInterval(() => fetchWeather(lat, lon), 10 * 60 * 1000); // refresh every 10 min
+    
+    // Location button handler
+    locBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        alert('Geolocation not supported by your browser.');
+        return;
+      }
+      locBtn.disabled = true;
+      locBtn.textContent = 'Locating…';
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          lat = position.coords.latitude;
+          lon = position.coords.longitude;
+          timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || timeZone;
+          
+          updateClock();
+          fetchWeather(lat, lon);
+          setInterval(updateClock, 1000);
+          setInterval(() => fetchWeather(lat, lon), 10 * 60 * 1000);
+          
+          locBtn.style.display = 'none'; // hide button after use
+        },
+        error => {
+          alert('Could not get location. Using default.');
+          locBtn.disabled = false;
+          locBtn.textContent = 'Use My Location 📍';
+        }
+      );
+    });
   </script>
 </body>
 </html>
+
